@@ -28,6 +28,9 @@ import discord
 import asyncio
 import time
 from utils.trainlogger.main import *
+from utils.trainlogger.stats import *
+from utils.trainlogger.graph import *
+
 
 # ENV READING
 config = dotenv_values(".env")
@@ -121,6 +124,242 @@ async def logtrain(ctx,  registration:str,  start:str, end:str, airline:str, typ
     # Run in a separate task
     asyncio.create_task(log())
 
+
+# train logger reader
+@trainlogs.command(name="view", description="View logged flights for a user")
+@app_commands.describe(user = "Who do you want to see the data of?", id="The ID of the log you want to view, leave blank to see all logs")
+
+async def userLogs(ctx, user: discord.User=None, id:str=None):
+    async def sendLogs():
+        if user == None:
+                userid = ctx.user
+        else:
+            userid = user
+            
+        if id != None:
+            file_path = f'utils/trainlogger/userdata/{userid.name}.csv'
+                
+            
+            
+            with open(file_path, mode='r', newline='') as file:
+                
+                if not id.startswith('#'):
+                    cleaned_id = '#' + id
+                else:
+                    cleaned_id = id
+                csv_reader = csv.reader(file)
+                for row in csv_reader:
+                    if row[0] == cleaned_id.upper():
+                                        
+                            # Make the embed
+                        embed = discord.Embed(title=f'Log `{id}`')
+                        embed.add_field(name=f'Aircraft', value="{} ({})".format(row[1], row[2]))
+                        embed.add_field(name=f'Airline', value="{}".format(row[4]))
+                        embed.add_field(name=f'Date', value="{}".format(row[3]))
+                        embed.add_field(name=f'Departure', value="{}".format(row[5]))
+                        embed.add_field(name=f'Arrival', value="{}".format(row[6]))
+                        
+                        try:
+                            embed.set_thumbnail(url=image)
+                        except:
+                            print('no image')
+                        await ctx.response.send_message(embed=embed)
+                await ctx.response.send_message(f'Cannot find log `{id}`')
+                
+        else:            
+            if user == None:
+                userid = ctx.user
+            else:
+                userid = user
+            
+            try:
+                file = discord.File(f'utils/trainlogger/userdata/{userid.name}.csv')
+            except FileNotFoundError:
+                if userid == ctx.user:
+                    await ctx.response.send_message("You have no flights logged!",ephemeral=True)
+                else:
+                    await ctx.response.send_message("This user has no flights logged!",ephemeral=True)
+                return
+            print(userid.name)
+            data = readLogs(userid.name)
+            if data == 'no data':
+                if userid == ctx.user:
+                    await ctx.response.send_message("You have no flights logged!",ephemeral=True)
+                else:
+                    await ctx.response.send_message("This user has no flights logged!",ephemeral=True)
+                return
+        
+            # create thread
+            try:
+                logsthread = await ctx.channel.create_thread(
+                    name=f'{userid.name}\'s Flight Logs',
+                    auto_archive_duration=60,
+                    type=discord.ChannelType.public_thread
+                )
+            except Exception as e:
+                await ctx.response.send_message(f"Cannot create thread! Ensure the bot has permission to create threads and that you aren't running this in another thread or DM.\n Error: `{e}`")
+                
+            # send reponse message
+            pfp = userid.avatar.url
+            embed=discord.Embed(title='Flight Logs', colour=0x7e3e98)
+            embed.set_author(name=userid.name, url='https://xm9g.net', icon_url=pfp)
+            embed.add_field(name='Click here to view your logs:', value=f'<#{logsthread.id}>')
+            await ctx.response.send_message(embed=embed)
+            await logsthread.send(f'# {userid.name}\'s CSV file', file=file)
+            await logsthread.send(f'# {userid.name}\'s Flight Logs')
+            formatted_data = ""
+            for sublist in data:
+                if len(sublist) >= 7:  # Ensure the sublist has enough items
+                    image = None
+                    
+                                    
+                    #send in thread to reduce spam!
+                        # Make the embed
+                    embed = discord.Embed(title=f"Log {sublist[0]}")
+                    embed.add_field(name=f'Aircraft', value="{} ({})".format(sublist[1], sublist[2]))
+                    embed.add_field(name=f'Airline', value="{}".format(sublist[4]))
+                    embed.add_field(name=f'Date', value="{}".format(sublist[3]))
+                    embed.add_field(name=f'Departure', value="{}".format(sublist[5]))
+                    embed.add_field(name=f'Arrival', value="{}".format(sublist[6]))
+                    try:
+                        embed.set_thumbnail(url=image)
+                    except:
+                        print('no image')
+                    
+                    await logsthread.send(embed=embed)
+                    # if count == 6:
+                    #     await ctx.channel.send('Max of 5 logs can be sent at a time. Use the csv option to see all logs')
+                    #     return
+            
+    asyncio.create_task(sendLogs())
+
+
+
+# train logger stats
+@trainlogs.command(name="stats", description="View stats for a logged user's flights.")
+@app_commands.describe(stat='Type of stats to view', user='Who do you want to see the data of?', format='Diffrent ways and graphs for showing the data.')
+@app_commands.choices(stat=[
+    app_commands.Choice(name="Airlines", value="airlines"),
+    app_commands.Choice(name="Airports", value="airports"),
+    app_commands.Choice(name="Trips", value="pairs"),
+    # app_commands.Choice(name="Trip Length (VIC train only)", value="length"),
+    app_commands.Choice(name="Aircraft", value="aircraft"),
+    app_commands.Choice(name="Dates", value="dates"),
+    app_commands.Choice(name="Types", value="types"),
+    # app_commands.Choice(name="Operators", value="operators"),
+])
+@app_commands.choices(format=[
+    app_commands.Choice(name="List and Bar chart", value="l&g"),
+    app_commands.Choice(name="Pie chart", value="pie"),
+    app_commands.Choice(name="CSV file", value="csv"),
+    app_commands.Choice(name="Daily Chart", value="daily"),
+])
+
+async def statTop(ctx: discord.Interaction, stat: str, format: str='l&g', global_stats:bool=False, user: discord.User = None):
+    async def sendLogs():
+        statSearch = stat
+        userid = user if user else ctx.user
+        
+        if userid.name == 'comeng_17':
+            name = 'comeng17'
+        else:
+            name = userid
+            
+        if global_stats:
+            data = globalTopStats(statSearch)
+        else:
+            try:
+                data = allTopStats(userid.name, statSearch) 
+            except:
+                await ctx.response.send_message('You have no logged trips!')
+        count = 1
+        message = ''
+        
+        # top operators thing:
+        if stat == 'operators':
+            try:
+                pieChart(data, f'Top Operators in Victoria ― {name}', ctx.user.name)
+                await ctx.response.send_message(message, file=discord.File(f'temp/Graph{ctx.user.name}.png'))
+            except:
+                await ctx.response.send_message('User has no logs!')  
+        if stat == 'length':
+            try:
+                lines = data.splitlines()
+                chunks = []
+                current_chunk = ""
+                await ctx.response.send_message('Here are your longest trips in Victoria:')
+
+                for line in lines:
+                    # Check if adding this line would exceed the max_length
+                    if len(current_chunk) + len(line) + 1 > 1500:  # +1 for the newline character
+                        chunks.append(current_chunk)
+                        current_chunk = line
+                    else:
+                        if current_chunk:
+                            current_chunk += "\n" + line
+                        else:
+                            current_chunk = line
+
+                # Add the last chunk
+                if current_chunk:
+                    chunks.append(current_chunk)
+                    
+                for i, chunk in enumerate(chunks):
+                    await ctx.channel.send(chunk)
+                
+            except Exception as e:
+                await ctx.response.send_message(f"Error: `{e}`")
+                
+        # make temp csv
+        csv_filename = f'temp/top{stat.title()}.{userid}-t{time.time()}.csv'
+        with open(csv_filename, mode='w', newline='') as csv_file:
+            writer = csv.writer(csv_file)  # Use csv.writer on csv_file, not csvs
+            for item in data:
+                station, times = item.split(': ')
+                writer.writerow([station, times.split()[0]])
+        
+        if format == 'csv':
+            try:
+                await ctx.response.send_message("Here is your file:", file=discord.File(csv_filename))
+            except:
+                ctx.response.send_message('You have no logs!')
+            
+        elif format == 'l&g':
+            await ctx.response.send_message('Here are your stats:')
+            for item in data:
+                station, times = item.split(': ')
+                message += f'{count}. **{station}:** `{times}`\n'
+                count += 1
+                if len(message) > 1900:
+                    await ctx.channel.send(message)
+                    message = ''
+            try:
+                if global_stats:
+                    barChart(csv_filename, stat.title(), f'Top {stat.title()} ― Global', ctx.user.name)
+                else:
+                    barChart(csv_filename, stat.title(), f'Top {stat.title()} ― {name}', ctx.user.name)
+                await ctx.channel.send(message, file=discord.File(f'temp/Graph{ctx.user.name}.png'))
+            except:
+                await ctx.channel.send('User has no logs!')
+        elif format == 'pie':
+            try:
+                if global_stats:
+                    pieChart(csv_filename, f'Top {stat.title()} ― {name}', ctx.user.name)
+                else:
+                    pieChart(csv_filename, f'Top {stat.title()} ― Global', ctx.user.name)
+
+                await ctx.response.send_message(file=discord.File(f'temp/Graph{ctx.user.name}.png'))
+            except:
+                await ctx.response.send_message('You have no logs!')
+        elif format == 'daily':
+            if stat != 'dates':
+                await ctx.response.send_message('Daily chart can only be used with the stat set to Top Dates')
+            try:
+                dayChart(csv_filename, ctx.user.name)
+                await ctx.response.send_message(file=discord.File(f'temp/Graph{ctx.user.name}.png'))
+            except:
+                ctx.response.send_message('User has no logs!')
+    await sendLogs()
 
 
 # HERE ARE THE INTERNAL USE COMMANDS
