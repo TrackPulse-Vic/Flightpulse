@@ -125,7 +125,7 @@ async def logtrain(ctx,  registration:str,  start:str, end:str, airline:str, typ
     asyncio.create_task(log())
 
 
-# train logger reader
+# train logger reader - log view
 @trainlogs.command(name="view", description="View logged flights for a user")
 @app_commands.describe(user = "Who do you want to see the data of?", id="The ID of the log you want to view, leave blank to see all logs")
 
@@ -158,7 +158,8 @@ async def userLogs(ctx, user: discord.User=None, id:str=None):
                         embed.add_field(name=f'Date', value="{}".format(row[3]))
                         embed.add_field(name=f'Departure', value="{}".format(row[5]))
                         embed.add_field(name=f'Arrival', value="{}".format(row[6]))
-                        
+                        if row[7]:
+                            embed.add_field(name='Notes:', value=row[7])
                         try:
                             embed.set_thumbnail(url=image)
                         except:
