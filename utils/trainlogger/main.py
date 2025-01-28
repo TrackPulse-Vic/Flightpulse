@@ -59,11 +59,11 @@ def addTrain(username, date, train_number, train_type, line, start, end, note):
     print(f"Data saved to {filename}")
     return id
 
-# Tram version:
-def addTram(username, date, train_number, train_type, line, start, end):
+# for cars
+def addCar(username, registration:str, start_time:str, end_time:str, start_odometer:int, end_odometer:int, paking:bool, light_traffic:bool, moderate_traffic:bool, heavy_taffic:bool, dry_weather:bool, wet_weather:bool, local_street:bool, main_rd:bool, inner_city:bool, freeway:bool, rural_highway:bool, rural_other:bool, gravel:bool, day:bool, dawn_dusk:bool, night:bool, driver:str, date, notes:str):
 
     # Create a CSV file named after the username
-    filename = f"utils/trainlogger/userdata/tram/{username}.csv"
+    filename = f"utils/drivelogger/userdata/{username}.csv"
     
     if not os.path.exists(filename):
         # Create the file if it does not exist
@@ -80,9 +80,9 @@ def addTram(username, date, train_number, train_type, line, start, end):
 
     # Write the data to the CSV file
     try:
-        os.listdir('utils\\trainlogger\\userdata\\tram')
+        os.listdir('utils\\drivelogger\\userdata')
     except FileNotFoundError:
-        os.mkdir('utils/trainlogger/userdata/tram')
+        os.mkdir('utils/drivelogger/userdata')
         id = 0
 
     with open(filename, 'r+', newline='') as file:
@@ -97,223 +97,7 @@ def addTram(username, date, train_number, train_type, line, start, end):
     with open(filename, 'a', newline='') as file:
         writer = csv.writer(file)
         # file.write('\n')
-        writer.writerow([f'#{id}',date, train_number,train_type, line, start, end])
-
-
-    print(f"Data saved to {filename}")
-    return id
-
-def addSydneyTrain(username, date, train_number, train_type, line, start, end):
-
-    # Create a CSV file named after the username
-    filename = f"utils/trainlogger/userdata/sydney-trains/{username}.csv"
-    
-    if not os.path.exists(filename):
-        # Create the file if it does not exist
-        with open(filename, 'w') as file:
-            file.write('')  # Write an empty string to create the file
-        print(f"File created: {filename}")
-    else:
-        print(f"File already exists: {filename}")
-    
-    if date.endswith('-'):
-        date = date[:-1]
-
-    id = None
-
-    # Write the data to the CSV file
-    try:
-        os.listdir('utils\\trainlogger\\userdata\\sydney-trains')
-    except FileNotFoundError:
-        os.mkdir('utils/trainlogger/userdata/sydney-trains')
-        id = 0
-
-    with open(filename, 'r+', newline='') as file:
-        data = file.readlines()
-        if data == []:
-            id = 0
-        else:
-            id = data[-1].split(',')[0][1:]
-    
-    id = dectohex(hextodec(id)+1)
-    
-    with open(filename, 'a', newline='') as file:
-        writer = csv.writer(file)
-        # file.write('\n')
-        writer.writerow([f'#{id}',date, train_number,train_type, line, start, end])
-
-
-    print(f"Data saved to {filename}")
-    return id
-
-def addBus(username, date, train_number, train_type, line, start, end, operator):
-
-    # Create a CSV file named after the username
-    filename = f"utils/trainlogger/userdata/bus/{username}.csv"
-    
-    if not os.path.exists(filename):
-        # Create the file if it does not exist
-        with open(filename, 'w') as file:
-            file.write('')  # Write an empty string to create the file
-        print(f"File created: {filename}")
-    else:
-        print(f"File already exists: {filename}")
-    
-    if date.endswith('-'):
-        date = date[:-1]
-
-    id = None
-
-    # Write the data to the CSV file
-    try:
-        os.listdir('utils\\trainlogger\\userdata\\bus')
-    except FileNotFoundError:
-        os.mkdir('utils/trainlogger/userdata/bus')
-        id = 0
-
-    with open(filename, 'r+', newline='') as file:
-        data = file.readlines()
-        if data == []:
-            id = 0
-        else:
-            id = data[-1].split(',')[0][1:]
-    
-    id = dectohex(hextodec(id)+1)
-    
-    with open(filename, 'a', newline='') as file:
-        writer = csv.writer(file)
-        # file.write('\n')
-        writer.writerow([f'#{id}',date, train_number,train_type, line, start, end, operator])
-
-
-    print(f"Data saved to {filename}")
-    return id
-# B
-def addFlight(username, date, train_number, train_type, line, start, end, operator):
-
-    # Create a CSV file named after the username
-    filename = f"utils/trainlogger/userdata/flights/{username}.csv"
-    
-    if not os.path.exists(filename):
-        # Create the file if it does not exist
-        with open(filename, 'w') as file:
-            file.write('')  # Write an empty string to create the file
-        print(f"File created: {filename}")
-    else:
-        print(f"File already exists: {filename}")
-    
-    if date.endswith('-'):
-        date = date[:-1]
-
-    id = None
-
-    # Write the data to the CSV file
-    try:
-        os.listdir('utils\\trainlogger\\userdata\\flights')
-    except FileNotFoundError:
-        os.mkdir('utils/trainlogger/userdata/flights')
-        id = 0
-
-    with open(filename, 'r+', newline='') as file:
-        data = file.readlines()
-        if data == []:
-            id = 0
-        else:
-            id = data[-1].split(',')[0][1:]
-    
-    id = dectohex(hextodec(id)+1)
-    
-    with open(filename, 'a', newline='') as file:
-        writer = csv.writer(file)
-        # file.write('\n')
-        writer.writerow([f'#{id}',date, train_number,train_type, line, start, end, operator])
-
-
-    print(f"Data saved to {filename}")
-    return id
-
-
-def addSydneyTram(username, date, train_number, train_type, line, start, end):
-
-    # Create a CSV file named after the username
-    filename = f"utils/trainlogger/userdata/sydney-trams/{username}.csv"
-    
-    if not os.path.exists(filename):
-        # Create the file if it does not exist
-        with open(filename, 'w') as file:
-            file.write('')  # Write an empty string to create the file
-        print(f"File created: {filename}")
-    else:
-        print(f"File already exists: {filename}")
-    
-    if date.endswith('-'):
-        date = date[:-1]
-
-    id = None
-
-    # Write the data to the CSV file
-    try:
-        os.listdir('utils\\trainlogger\\userdata\\sydney-trams')
-    except FileNotFoundError:
-        os.mkdir('utils/trainlogger/userdata/sydney-trams')
-        id = 0
-
-    with open(filename, 'r+', newline='') as file:
-        data = file.readlines()
-        if data == []:
-            id = 0
-        else:
-            id = data[-1].split(',')[0][1:]
-    
-    id = dectohex(hextodec(id)+1)
-    
-    with open(filename, 'a', newline='') as file:
-        writer = csv.writer(file)
-        # file.write('\n')
-        writer.writerow([f'#{id}',date, train_number,train_type, line, start, end])
-
-
-    print(f"Data saved to {filename}")
-    return id
-
-def addAdelaideTrain(username, date, train_number, train_type, line, start, end):
-
-    # Create a CSV file named after the username
-    filename = f"utils/trainlogger/userdata/adelaide-trains/{username}.csv"
-    
-    if not os.path.exists(filename):
-        # Create the file if it does not exist
-        with open(filename, 'w') as file:
-            file.write('')  # Write an empty string to create the file
-        print(f"File created: {filename}")
-    else:
-        print(f"File already exists: {filename}")
-    
-    if date.endswith('-'):
-        date = date[:-1]
-
-    id = None
-
-    # Write the data to the CSV file
-    try:
-        os.listdir('utils\\trainlogger\\userdata\\adelaide-trains')
-    except FileNotFoundError:
-        os.mkdir('utils/trainlogger/userdata/adelaide-trains')
-        id = 0
-
-    with open(filename, 'r+', newline='') as file:
-        data = file.readlines()
-        if data == []:
-            id = 0
-        else:
-            id = data[-1].split(',')[0][1:]
-    
-    id = dectohex(hextodec(id)+1)
-    
-    with open(filename, 'a', newline='') as file:
-        writer = csv.writer(file)
-        # file.write('\n')
-        writer.writerow([f'#{id}',date, train_number,train_type, line, start, end])
+        writer.writerow([f'#{id}',date, registration, start_time, end_time, start_odometer, end_odometer, paking, light_traffic, moderate_traffic, heavy_taffic, dry_weather, wet_weather, local_street, main_rd, inner_city, freeway, rural_highway, rural_other, gravel, day, dawn_dusk, night, driver, notes])   
 
 
     print(f"Data saved to {filename}")

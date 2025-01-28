@@ -10,6 +10,7 @@ utils/trainlogger/userdatabackup
 photo-submissions/
 temp/
 utils/line-status-data.csv
+utils/drivelogger/userdata/
 logins/
 trainsets.csv
 metrotrains.csv

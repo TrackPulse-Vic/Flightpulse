@@ -60,7 +60,7 @@ async def on_ready():
     bot.tree.add_command(trainlogs)
     
 
-#log train
+#log plane
 @trainlogs.command(name="flight", description="Log a flight you have been on")
 @app_commands.describe(registration = "Aircraft registration", date = "Date in DD/MM/YYYY format", airline = 'Airline', start='Departure Airport ICAO', end = 'Arrival Airport ICAO', type='Type of aircraft')
 # @app_commands.autocomplete(start=station_autocompletion)
@@ -123,6 +123,121 @@ async def logtrain(ctx,  registration:str,  start:str, end:str, airline:str, typ
                         
     # Run in a separate task
     asyncio.create_task(log())
+    
+#log car
+@trainlogs.command(name="drive", description="Log a drive")
+@app_commands.describe(registration = "Car registration", date = "Date in DD/MM/YYYY format", start_time='Start time in 24h HH:MM format', end_time ='End time in 24h HH:MM format',start_odometer='Start odometer reading', end_odometer='End odometer reading', notes='Any notes you want to add')
+
+# Train logger
+async def logcar(ctx, registration:str, start_time:str, end_time:str, start_odometer:int, end_odometer:int, paking:bool, light_traffic:bool, moderate_traffic:bool, heavy_taffic:bool, dry_weather:bool, wet_weather:bool, local_street:bool, main_rd:bool, inner_city:bool, freeway:bool, rural_highway:bool, rural_other:bool, gravel:bool, day:bool, dawn_dusk:bool, night:bool, driver:str, date:str='today', notes:str=None):
+    channel = ctx.channel
+    await ctx.response.defer()
+    print(date)
+    async def log():
+        print("logging the drive")
+
+        savedate = date.split('/')
+        if date.lower() == 'today':
+            current_time = time.localtime()
+            savedate = time.strftime("%Y-%m-%d", current_time)
+        else:
+            try:
+                savedate = time.strptime(date, "%d/%m/%Y")
+                savedate = time.strftime("%Y-%m-%d", savedate)
+            except ValueError:
+                await ctx.edit_original_response(content=f'Invalid date: `{date}`\nMake sure to use a possible date.')
+                return
+            except TypeError:
+                await ctx.edit_original_response(content=f'Invalid date: `{date}`\nUse the form `dd/mm/yyyy`')
+                return
+            
+        # Add car to the list
+        id = addCar(ctx.user.name, savedate, registration, start_time, end_time, start_odometer, end_odometer, paking, light_traffic, moderate_traffic, heavy_taffic, dry_weather, wet_weather, local_street, main_rd, inner_city, freeway, rural_highway, rural_other, gravel, day, dawn_dusk, night, driver, notes)
+        # await ctx.response.send_message(f"Added {set} ({type}) on the {line} line on {savedate} from {start.title()} to {end.title()} to your file. (Log ID `#{id}`)")
+        embed = discord.Embed(title="Drive Logged")
+        
+        embed.add_field(name="Car", value=f'{registration}')
+        embed.add_field(name="Time", value=f'{savedate} {start_time} to {end_time}')
+        embed.add_field(name="Odometer", value=f'{start_odometer} to {end_odometer}')
+        
+        if paking:
+            embed.add_field(name="Parking", value=str(paking))
+        if light_traffic:
+            embed.add_field(name="Light Traffic", value=str(light_traffic))
+        if moderate_traffic:
+            embed.add_field(name="Moderate Traffic", value=str(moderate_traffic))
+        if heavy_taffic:
+            embed.add_field(name="Heavy Traffic", value=str(heavy_taffic))
+        if dry_weather:
+            embed.add_field(name="Dry Weather", value=str(dry_weather))
+        if wet_weather:
+            embed.add_field(name="Wet Weather", value=str(wet_weather))
+        if local_street:
+            embed.add_field(name="Local Street", value=str(local_street))
+        if main_rd:
+            embed.add_field(name="Main Road", value=str(main_rd))
+        if inner_city:
+            embed.add_field(name="Inner City", value=str(inner_city))
+        if freeway:
+            embed.add_field(name="Freeway", value=str(freeway))
+        if rural_highway:
+            embed.add_field(name="Rural Highway", value=str(rural_highway))
+        if rural_other:
+            embed.add_field(name="Rural Other", value=str(rural_other))
+        if gravel:
+            embed.add_field(name="Gravel", value=str(gravel))
+        if day:
+            embed.add_field(name="Day", value=str(day))
+        if dawn_dusk:
+            embed.add_field(name="Dawn/Dusk", value=str(dawn_dusk))
+        if night:
+            embed.add_field(name="Night", value=str(night))
+        
+        embed.add_field(name="Driver", value=driver)
+        
+        if notes:
+            embed.add_field(name="Notes", value=notes)
+        
+        await ctx.edit_original_response(embed=embed)
+        # embed = discord.Embed(title="Drive Logged")
+        
+        # embed.add_field(name="Car", value=f'{registration}')
+        # embed.add_field(name="Time", value=f'{savedate} {start_time} to {end_time}')
+        # if notes:
+        #     embed.add_field(name="Notes", value=notes)
+        
+        # await ctx.edit_original_response(embed=embed)
+                        
+    # Run in a separate task
+    asyncio.create_task(log())
+    
+@trainlogs.command(name="total_drive_time", description="Show the total driving time from a user's logs")
+@app_commands.describe(user="The user whose total driving time you want to see")
+
+async def total_drive_time(ctx: discord.Interaction, user: discord.User = None):
+    async def calculate_total_drive_time():
+        userid = user if user else ctx.user
+        file_path = f'utils/drivelogger/userdata/{userid.name}.csv'
+        
+        try:
+            with open(file_path, mode='r', newline='') as file:
+                csv_reader = csv.reader(file)
+                total_minutes = 0
+                for row in csv_reader:
+                    start_time = datetime.strptime(row[4], "%H:%M")
+                    end_time = datetime.strptime(row[5], "%H:%M")
+                    duration = (end_time - start_time).total_seconds() / 60  # duration in minutes
+                    total_minutes += duration
+                
+                total_hours = total_minutes // 60
+                total_minutes = total_minutes % 60
+                await ctx.response.send_message(f'Total driving time for {userid.name}: {int(total_hours)} hours and {int(total_minutes)} minutes')
+        except FileNotFoundError:
+            await ctx.response.send_message(f'{userid.name} has no driving logs!', ephemeral=True)
+        except Exception as e:
+            await ctx.response.send_message(f'An error occurred: {e}', ephemeral=True)
+    
+    asyncio.create_task(calculate_total_drive_time())
 
 
 # train logger reader - log view
